@@ -1,0 +1,3 @@
+const AGORA_APP_ID = '156d22f3875c4e72b43ef86a9097bb3b'
+
+export { AGORA_APP_ID }
