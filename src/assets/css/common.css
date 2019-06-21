@@ -9,19 +9,6 @@ html {
     overflow-y: auto;
     font-size: 14px;
     box-sizing: border-box;
-
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background-color: #fff;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background-color: #205081;
-    }
 }
 
 html {
@@ -68,7 +55,6 @@ body {
     font-family: "microsoft yahei", "Helvetica Neue", Helvetica, arial, STHeiTi, sans-serif;
     color: #fff;
     font-size: 14px;
-    min-width: 12.8rem;
     letter-spacing: 0.2px;
     
 }

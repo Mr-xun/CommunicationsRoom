@@ -52,7 +52,6 @@ class SignalClient extends EventEmitter {
             this.channel = channel;
         });
     }
-
     broadcast(msg) {
         // broadcast msgs to users in current channel
         this.channel.messageChannelSend(msg);

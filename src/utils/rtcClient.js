@@ -1,7 +1,14 @@
 import AgoraRTC from 'agora-rtc-sdk'
-import {Logger} from './utils'
-import { EventEmitter } from 'events';
-import { StreamType, DualType } from '../utils/constants'
+import {
+    Logger
+} from './utils'
+import {
+    EventEmitter
+} from 'events';
+import {
+    StreamType,
+    DualType
+} from '../utils/constants'
 
 
 // wrapper of Stream Object
@@ -17,14 +24,23 @@ class StreamWrapper {
 }
 
 // wrapper of agora rtc sdk client
-class RtcClient extends EventEmitter{
+class RtcClient extends EventEmitter {
     constructor(appid) {
         super();
         this.appid = appid;
-        this.rtc = AgoraRTC.createClient({ mode: 'live', codec: 'h264' });
+        this.rtc = AgoraRTC.createClient({
+            mode: 'live',
+            codec: 'h264'
+        });
+        this.localStream = AgoraRTC.createStream({
+            streamID: null,
+            audio: true,
+            video: true,
+            screen: false
+        });
         this.streams = [];
         this.uid = null;
-        this.videoProfile = "480p_1";
+        this.videoProfile = "1440P_1";
         this.dynamicKey = null;
 
         // this.subscribeWindowResizeEvent();
@@ -45,7 +61,7 @@ class RtcClient extends EventEmitter{
                     //join channel, a random uid will be given once joined
                     client.join(key, channelName, undefined, uid => {
                         // if you are an audience, you may not need to continue
-                        if(!publish) {
+                        if (!publish) {
                             // immediately resolve if audience
                             return resolve();
                         }
@@ -58,19 +74,19 @@ class RtcClient extends EventEmitter{
                             screen: false
                         };
                         this.uid = uid;
-                        let localStream = AgoraRTC.createStream(options);
+                        // let localStream = AgoraRTC.createStream(options);
                         // this decides the video resolution/fps
                         // for all values go to: https://docs.agora.io/cn/2.4/product/Voice/API%20Reference/communication_web_audio?platform=Web
-                        localStream.setVideoProfile(this.videoProfile);
-                        
+                        this.localStream.setVideoProfile(this.videoProfile);
+
                         // initialize localstream
-                        localStream.init(() => {
+                        this.localStream.init(() => {
                             //adding this stream into stream list and notify stream list update
-                            this.addStream(new StreamWrapper(localStream, StreamType.Local, uid))
+                            this.addStream(new StreamWrapper(this.localStream, StreamType.Local, uid))
                             //enable dual stream mode so we have big/small streams
                             client.enableDualStream(() => {
                                 //publish stream so that others will receive your video
-                                client.publish(localStream);
+                                client.publish(this.localStream);
                                 resolve();
                             }, err => {
                                 reject(err);
@@ -80,7 +96,7 @@ class RtcClient extends EventEmitter{
                         reject(err);
                     });
                 });
-            } catch(e){
+            } catch (e) {
                 throw e;
             };
         });
@@ -103,9 +119,9 @@ class RtcClient extends EventEmitter{
         // indicate a new user has joined the channel, you will not be able to see him unless you subscribe him.
         client.on('stream-added', evt => {
             let stream = evt.stream;
-            Logger.log("New stream added: " + stream.getId());
-            Logger.log("Timestamp: " + Date.now());
-            Logger.log("Subscribe ", stream);
+            // Logger.log("New stream added: " + stream.getId());
+            // Logger.log("Timestamp: " + Date.now());
+            // Logger.log("Subscribe ", stream);
             client.subscribe(stream, function (err) {
                 Logger.log("Subscribe stream failed", err);
             });
@@ -113,18 +129,18 @@ class RtcClient extends EventEmitter{
 
         // indicate a user has left current channel
         client.on('peer-leave', evt => {
-            Logger.log("Peer has left: " + evt.uid);
-            Logger.log("Timestamp: " + Date.now());
-            Logger.log(evt);
+            // Logger.log("Peer has left: " + evt.uid);
+            // Logger.log("Timestamp: " + Date.now());
+            // Logger.log(evt);
             this.removeStream(evt.uid);
         });
 
         // indicate a user has been subscribed, you may play the live video now
         client.on('stream-subscribed', evt => {
             let stream = evt.stream;
-            Logger.log("Got stream-subscribed event");
-            Logger.log("Timestamp: " + Date.now());
-            Logger.log("Subscribe remote stream successfully: " + stream.getId());
+            // Logger.log("Got stream-subscribed event");
+            // Logger.log("Timestamp: " + Date.now());
+            // Logger.log("Subscribe remote stream successfully: " + stream.getId());
             Logger.log(evt);
 
             let streamObj = new StreamWrapper(stream, StreamType.Remote, stream.getId());
@@ -134,9 +150,9 @@ class RtcClient extends EventEmitter{
         // indicate a user's stream has been removed
         client.on("stream-removed", evt => {
             let stream = evt.stream;
-            Logger.log("Stream removed: " + evt.stream.getId());
-            Logger.log("Timestamp: " + Date.now());
-            Logger.log(evt);
+            // Logger.log("Stream removed: " + evt.stream.getId());
+            // Logger.log("Timestamp: " + Date.now());
+            // Logger.log(evt);
 
             this.removeStream(stream.getId());
         });
@@ -148,7 +164,7 @@ class RtcClient extends EventEmitter{
     }
 
     addStream(stream) {
-        if(!stream instanceof StreamWrapper) {
+        if (!stream instanceof StreamWrapper) {
             console.error(`only type of streamWrapper can be added to list`);
             return;
         }
@@ -162,12 +178,23 @@ class RtcClient extends EventEmitter{
     }
 
     setRemoteStreamType(stream, dualType) {
-        if(!stream instanceof StreamWrapper) {
+        if (!stream instanceof StreamWrapper) {
             console.error(`only type of streamWrapper can be added to list`);
             return;
         }
         let client = this.rtc;
         client.setRemoteVideoStreamType(stream.stream, dualType);
+    }
+    levelChannel() {
+        let client = this.rtc;
+        this.localStream.close()
+        client.leave(() => {
+            this.emit('streamlist-update', this.streams);
+            console.log("client leaves channel,-----------------------------------------------------");
+            //……
+        }, (err) => {
+            console.log("client leave failed ", err);
+        });
     }
 }
 
